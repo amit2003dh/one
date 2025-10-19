@@ -5,12 +5,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/lib/theme-provider";
 import Inbox from "@/pages/inbox";
+import KnowledgeBasePage from "@/pages/knowledge-base";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Inbox} />
+      <Route path="/knowledge" component={KnowledgeBasePage} />
       <Route component={NotFound} />
     </Switch>
   );

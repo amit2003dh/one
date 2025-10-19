@@ -36,8 +36,19 @@ A comprehensive MERN-stack email aggregator with real-time IMAP synchronization,
 - Full email detail view with metadata and actions
 - Advanced search with real-time filtering
 - Account management (add/remove IMAP accounts)
+- Knowledge Base management page
 - Dark/light theme support
 - Fully responsive mobile design
+
+### ✅ AI-Powered Suggested Replies with RAG (Requirement 6)
+- Vector-based knowledge base using OpenAI embeddings
+- RAG (Retrieval-Augmented Generation) for context-aware reply suggestions
+- Knowledge base CRUD operations via dedicated management page
+- Cosine similarity search to find relevant knowledge entries
+- One-click "Suggest Reply" button in email detail view
+- Displays AI-generated replies with confidence scores
+- Shows which knowledge base entries were used for context
+- Copy-to-clipboard functionality for suggested replies
 
 ## 🏗️ Architecture
 
@@ -146,6 +157,13 @@ The application follows a professional email client design inspired by Linear an
 - `GET /api/emails/:id` - Get single email
 - `PATCH /api/emails/:id/category` - Update category
 - `PATCH /api/emails/:id/read` - Mark as read
+- `POST /api/emails/suggest-reply` - Generate AI reply suggestion (RAG)
+
+### Knowledge Base (RAG)
+- `GET /api/knowledge` - List all knowledge base entries
+- `POST /api/knowledge` - Create new knowledge entry (auto-generates embeddings)
+- `PATCH /api/knowledge/:id` - Update knowledge entry
+- `DELETE /api/knowledge/:id` - Delete knowledge entry
 
 ### Health Check
 - `GET /api/health` - Check service status
@@ -203,15 +221,15 @@ All backend features can be tested via Postman:
 3. **Search**: `GET /api/emails?query=meeting&category=Interested`
 4. **Categorize**: `PATCH /api/emails/:id/category` with category body
 
-## 🚀 Next Phase Features (Not in MVP)
+## 🚀 Next Phase Features
 
-- **AI-Powered Suggested Replies** using RAG with vector database
 - Email composition and reply functionality
 - Thread grouping and conversation view
 - Bulk actions (mark multiple as read, delete, categorize)
 - Analytics dashboard with email categorization statistics
 - PostgreSQL database for production persistence
 - User authentication and multi-user support
+- Advanced vector database (Pinecone, Weaviate, Chroma) for production-scale RAG
 
 ## 📚 Project Structure
 
@@ -248,7 +266,7 @@ shared/
 - ✅ Frontend UI with email display
 - ✅ AI category visualization
 - ✅ Search functionality powered by Elasticsearch
-- 🔲 AI-Powered Suggested Replies (Next Phase)
+- ✅ AI-Powered Suggested Replies with RAG (Vector Database)
 
 ## 🤝 Contributing
 

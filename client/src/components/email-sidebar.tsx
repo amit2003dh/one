@@ -23,13 +23,15 @@ import {
   XCircle,
   AlertTriangle,
   BriefcaseIcon,
-  Folder
+  Folder,
+  BookOpen
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import type { EmailAccount } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Link, useLocation } from "wouter";
 
 interface EmailSidebarProps {
   onAddAccount: () => void;
@@ -70,6 +72,8 @@ export function EmailSidebar({
   const { data: accounts, isLoading } = useQuery<EmailAccount[]>({
     queryKey: ["/api/accounts"],
   });
+  
+  const [location] = useLocation();
 
   return (
     <Sidebar>
@@ -177,6 +181,27 @@ export function EmailSidebar({
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Tools */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Tools</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location === "/knowledge"}
+                  data-testid="button-knowledge-base"
+                >
+                  <Link href="/knowledge">
+                    <BookOpen className="h-4 w-4" />
+                    <span>Knowledge Base</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
