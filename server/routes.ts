@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { getStorage } from "./storage";
 import { 
   insertEmailAccountSchema, 
   updateEmailCategorySchema,
@@ -21,7 +21,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all email accounts
   app.get("/api/accounts", async (req, res) => {
     try {
-      const accounts = await storage.getAllAccounts();
+      const accounts = await getStorage().getAllAccounts();
       res.json(accounts);
     } catch (error) {
       console.error("Error fetching accounts:", error);
@@ -35,12 +35,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertEmailAccountSchema.parse(req.body);
       
       // Check if account already exists
-      const existing = await storage.getAccountByEmail(validatedData.email);
+      const existing = await getStorage().getAccountByEmail(validatedData.email);
       if (existing) {
         return res.status(400).json({ error: "Account already exists" });
       }
 
-      const account = await storage.createAccount(validatedData);
+      const account = await getStorage().createAccount(validatedData);
       
       // Start IMAP sync for this account
       await startIMAPSync(account);
@@ -61,7 +61,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       stopIMAPSync(id);
 
       // Delete account from storage
-      const deleted = await storage.deleteAccount(id);
+      const deleted = await getStorage().deleteAccount(id);
       
       if (!deleted) {
         return res.status(404).json({ error: "Account not found" });
@@ -95,7 +95,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If Elasticsearch returns nothing or fails, fallback to memory
       if (emails.length === 0) {
-        const allEmails = await storage.getAllEmails();
+        const allEmails = await getStorage().getAllEmails();
         
         // Apply filters
         emails = allEmails.filter((email) => {
@@ -132,13 +132,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/emails/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const email = await storage.getEmail(id);
+      const email = await getStorage().getEmail(id);
       
       if (!email) {
         return res.status(404).json({ error: "Email not found" });
       }
 
-      const account = await storage.getAccount(email.accountId);
+      const account = await getStorage().getAccount(email.accountId);
       const emailWithAccount = {
         ...email,
         accountEmail: account?.email || "Unknown",
@@ -157,7 +157,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { category } = updateEmailCategorySchema.parse(req.body);
 
-      const email = await storage.updateEmailCategory(id, category);
+      const email = await getStorage().updateEmailCategory(id, category);
       
       if (!email) {
         return res.status(404).json({ error: "Email not found" });
@@ -185,7 +185,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/emails/:id/read", async (req, res) => {
     try {
       const { id } = req.params;
-      const email = await storage.markEmailAsRead(id);
+      const email = await getStorage().markEmailAsRead(id);
       
       if (!email) {
         return res.status(404).json({ error: "Email not found" });
@@ -206,7 +206,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all knowledge base entries
   app.get("/api/knowledge", async (req, res) => {
     try {
-      const entries = await storage.getAllKnowledgeEntries();
+      const entries = await getStorage().getAllKnowledgeEntries();
       res.json(entries);
     } catch (error) {
       console.error("Error fetching knowledge base:", error);
@@ -220,7 +220,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertKnowledgeBaseSchema.parse(req.body);
       
       const embedding = await generateEmbedding(validatedData.content);
-      const entry = await storage.createKnowledgeEntry(validatedData, embedding);
+      const entry = await getStorage().createKnowledgeEntry(validatedData, embedding);
 
       res.status(201).json(entry);
     } catch (error: any) {
@@ -240,7 +240,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const embedding = await generateEmbedding(content);
-      const entry = await storage.updateKnowledgeEntry(id, content, embedding);
+      const entry = await getStorage().updateKnowledgeEntry(id, content, embedding);
 
       if (!entry) {
         return res.status(404).json({ error: "Knowledge entry not found" });
@@ -257,7 +257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/knowledge/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const deleted = await storage.deleteKnowledgeEntry(id);
+      const deleted = await getStorage().deleteKnowledgeEntry(id);
 
       if (!deleted) {
         return res.status(404).json({ error: "Knowledge entry not found" });
@@ -275,12 +275,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { emailId } = suggestReplySchema.parse(req.body);
 
-      const email = await storage.getEmail(emailId);
+      const email = await getStorage().getEmail(emailId);
       if (!email) {
         return res.status(404).json({ error: "Email not found" });
       }
 
-      const knowledgeEntries = await storage.getAllKnowledgeEntries();
+      const knowledgeEntries = await getStorage().getAllKnowledgeEntries();
       const suggestion = await generateReply(email, knowledgeEntries);
 
       res.json(suggestion);

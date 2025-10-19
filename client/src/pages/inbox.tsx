@@ -4,6 +4,7 @@ import { EmailSidebar } from "@/components/email-sidebar";
 import { EmailList } from "@/components/email-list";
 import { EmailDetail } from "@/components/email-detail";
 import { AddAccountDialog } from "@/components/add-account-dialog";
+import { SettingsDialog } from "@/components/settings-dialog";
 import { SearchBar } from "@/components/search-bar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useQuery } from "@tanstack/react-query";
@@ -123,6 +124,7 @@ export default function Inbox() {
       </div>
 
       <AddAccountDialog open={showAddAccount} onOpenChange={setShowAddAccount} />
+      <SettingsDialog open={showSettings} onOpenChange={setShowSettings} />
     </SidebarProvider>
   );
 }

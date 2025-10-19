@@ -122,13 +122,21 @@ export function EmailSidebar({
                       isActive={selectedAccountId === account.id}
                       onClick={() => onAccountSelect(account.id)}
                       data-testid={`button-account-${account.id}`}
+                      className="flex flex-col items-start h-auto py-2"
                     >
-                      <Mail className="h-4 w-4" />
-                      <span className="truncate">{account.email}</span>
-                      {account.isActive && (
-                        <Badge variant="outline" className="ml-auto text-xs">
-                          Active
-                        </Badge>
+                      <div className="flex items-center w-full gap-2">
+                        <Mail className="h-4 w-4 flex-shrink-0" />
+                        <span className="truncate flex-1">{account.email}</span>
+                        {account.isActive && (
+                          <Badge variant="outline" className="text-xs">
+                            Active
+                          </Badge>
+                        )}
+                      </div>
+                      {account.lastSyncedAt && (
+                        <span className="text-xs text-muted-foreground ml-6">
+                          Synced: {new Date(account.lastSyncedAt).toLocaleString()}
+                        </span>
                       )}
                     </SidebarMenuButton>
                   </SidebarMenuItem>

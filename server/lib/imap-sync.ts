@@ -1,6 +1,6 @@
 import Imap from "node-imap";
 import { simpleParser } from "mailparser";
-import { storage } from "../storage";
+import { getStorage } from "../storage";
 import type { EmailAccount, InsertEmail } from "@shared/schema";
 import { categorizeEmail } from "./openai";
 import { indexEmail } from "./elasticsearch";
@@ -126,7 +126,7 @@ async function fetchEmails(imap: Imap, account: EmailAccount, searchCriteria: an
             
             // Check if email already exists
             const messageId = parsed.messageId || `${account.id}-${uid}`;
-            const existing = await storage.getEmailByMessageId(messageId, account.id);
+            const existing = await getStorage().getEmailByMessageId(messageId, account.id);
             
             if (existing) {
               console.log(`Email already exists: ${messageId}`);
@@ -160,7 +160,7 @@ async function fetchEmails(imap: Imap, account: EmailAccount, searchCriteria: an
             };
 
             // Save to storage
-            const email = await storage.createEmail(emailData);
+            const email = await getStorage().createEmail(emailData);
             
             // Index in Elasticsearch
             await indexEmail(email);
@@ -176,7 +176,7 @@ async function fetchEmails(imap: Imap, account: EmailAccount, searchCriteria: an
             }
 
             // Update account sync time
-            await storage.updateAccountSyncTime(account.id);
+            await getStorage().updateAccountSyncTime(account.id);
 
           } catch (error) {
             console.error(`Error processing email for ${account.email}:`, error);
@@ -209,7 +209,7 @@ export function stopIMAPSync(accountId: string) {
 
 // Start all active accounts
 export async function startAllAccounts() {
-  const accounts = await storage.getAllAccounts();
+  const accounts = await getStorage().getAllAccounts();
   for (const account of accounts) {
     if (account.isActive) {
       await startIMAPSync(account);

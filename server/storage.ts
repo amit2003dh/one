@@ -217,3 +217,8 @@ export class MemStorage implements IStorage {
 }
 
 export const storage = new MemStorage();
+
+// Helper to get the current storage instance (could be MemStorage or MongoStorage)
+export function getStorage(): IStorage {
+  return (global as any).storage || storage;
+}
