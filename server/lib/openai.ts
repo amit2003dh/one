@@ -1,7 +1,17 @@
 import OpenAI from "openai";
 
 // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+let openai: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error("OpenAI API key is not configured. Please set OPENAI_API_KEY environment variable.");
+  }
+  if (!openai) {
+    openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
+  return openai;
+}
 
 export interface EmailCategorizationResult {
   category: "Interested" | "Meeting Booked" | "Not Interested" | "Spam" | "Out of Office";
@@ -14,6 +24,7 @@ export async function categorizeEmail(
   from: string
 ): Promise<EmailCategorizationResult> {
   try {
+    const client = getOpenAIClient();
     const prompt = `Analyze this email and categorize it into one of these categories:
 - "Interested": The sender shows interest in your product/service/proposal
 - "Meeting Booked": The email is about scheduling or confirming a meeting
@@ -28,7 +39,7 @@ Body: ${body.substring(0, 1000)}
 
 Respond with JSON in this format: { "category": "category_name", "confidence": 0.0-1.0 }`;
 
-    const response = await openai.chat.completions.create({
+    const response = await client.chat.completions.create({
       model: "gpt-5",
       messages: [
         {
