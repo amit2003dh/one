@@ -88,3 +88,30 @@ export const updateEmailCategorySchema = z.object({
 });
 
 export type UpdateEmailCategory = z.infer<typeof updateEmailCategorySchema>;
+
+// Knowledge Base Table (for RAG)
+export const knowledgeBase = pgTable("knowledge_base", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  content: text("content").notNull(),
+  embedding: text("embedding"),
+  category: text("category").notNull().default("general"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
+export const insertKnowledgeBaseSchema = createInsertSchema(knowledgeBase).omit({
+  id: true,
+  embedding: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertKnowledgeBase = z.infer<typeof insertKnowledgeBaseSchema>;
+export type KnowledgeBase = typeof knowledgeBase.$inferSelect;
+
+// Suggested reply request schema
+export const suggestReplySchema = z.object({
+  emailId: z.string(),
+});
+
+export type SuggestReply = z.infer<typeof suggestReplySchema>;

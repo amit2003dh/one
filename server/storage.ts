@@ -3,7 +3,9 @@ import {
   type InsertEmail,
   type EmailAccount, 
   type InsertEmailAccount,
-  type EmailWithAccount 
+  type EmailWithAccount,
+  type KnowledgeBase,
+  type InsertKnowledgeBase
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -25,15 +27,24 @@ export interface IStorage {
   updateEmailCategory(id: string, category: string): Promise<Email | undefined>;
   markEmailAsRead(id: string): Promise<Email | undefined>;
   deleteEmailsByAccount(accountId: string): Promise<void>;
+
+  // Knowledge Base
+  getKnowledgeEntry(id: string): Promise<KnowledgeBase | undefined>;
+  getAllKnowledgeEntries(): Promise<KnowledgeBase[]>;
+  createKnowledgeEntry(entry: InsertKnowledgeBase, embedding: number[]): Promise<KnowledgeBase>;
+  updateKnowledgeEntry(id: string, content: string, embedding: number[]): Promise<KnowledgeBase | undefined>;
+  deleteKnowledgeEntry(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
   private accounts: Map<string, EmailAccount>;
   private emails: Map<string, Email>;
+  private knowledgeBase: Map<string, KnowledgeBase>;
 
   constructor() {
     this.accounts = new Map();
     this.emails = new Map();
+    this.knowledgeBase = new Map();
   }
 
   // Email Accounts
@@ -55,7 +66,11 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const account: EmailAccount = {
       id,
-      ...insertAccount,
+      email: insertAccount.email,
+      imapHost: insertAccount.imapHost,
+      imapPort: insertAccount.imapPort ?? 993,
+      imapUser: insertAccount.imapUser,
+      imapPassword: insertAccount.imapPassword,
       isActive: true,
       lastSyncedAt: null,
       createdAt: new Date(),
@@ -115,7 +130,18 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const email: Email = {
       id,
-      ...insertEmail,
+      accountId: insertEmail.accountId,
+      messageId: insertEmail.messageId,
+      from: insertEmail.from,
+      to: insertEmail.to,
+      subject: insertEmail.subject,
+      bodyText: insertEmail.bodyText ?? null,
+      bodyHtml: insertEmail.bodyHtml ?? null,
+      folder: insertEmail.folder ?? "INBOX",
+      category: insertEmail.category ?? null,
+      isRead: insertEmail.isRead ?? false,
+      hasAttachments: insertEmail.hasAttachments ?? false,
+      receivedAt: insertEmail.receivedAt,
       createdAt: new Date(),
     };
     this.emails.set(id, email);
@@ -148,6 +174,45 @@ export class MemStorage implements IStorage {
       .map(([id, _]) => id);
     
     emailsToDelete.forEach((id) => this.emails.delete(id));
+  }
+
+  // Knowledge Base
+  async getKnowledgeEntry(id: string): Promise<KnowledgeBase | undefined> {
+    return this.knowledgeBase.get(id);
+  }
+
+  async getAllKnowledgeEntries(): Promise<KnowledgeBase[]> {
+    return Array.from(this.knowledgeBase.values());
+  }
+
+  async createKnowledgeEntry(insertEntry: InsertKnowledgeBase, embedding: number[]): Promise<KnowledgeBase> {
+    const id = randomUUID();
+    const entry: KnowledgeBase = {
+      id,
+      content: insertEntry.content,
+      category: insertEntry.category ?? "general",
+      embedding: JSON.stringify(embedding),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.knowledgeBase.set(id, entry);
+    return entry;
+  }
+
+  async updateKnowledgeEntry(id: string, content: string, embedding: number[]): Promise<KnowledgeBase | undefined> {
+    const entry = this.knowledgeBase.get(id);
+    if (entry) {
+      entry.content = content;
+      entry.embedding = JSON.stringify(embedding);
+      entry.updatedAt = new Date();
+      this.knowledgeBase.set(id, entry);
+      return entry;
+    }
+    return undefined;
+  }
+
+  async deleteKnowledgeEntry(id: string): Promise<boolean> {
+    return this.knowledgeBase.delete(id);
   }
 }
 

@@ -4,12 +4,15 @@ import { storage } from "./storage";
 import { 
   insertEmailAccountSchema, 
   updateEmailCategorySchema,
-  searchFiltersSchema 
+  searchFiltersSchema,
+  insertKnowledgeBaseSchema,
+  suggestReplySchema
 } from "@shared/schema";
 import { startIMAPSync, stopIMAPSync } from "./lib/imap-sync";
 import { searchEmails, updateEmailInES } from "./lib/elasticsearch";
 import { categorizeEmail } from "./lib/openai";
 import { sendSlackNotification, sendWebhook } from "./lib/webhooks";
+import { generateEmbedding, generateReply } from "./lib/rag";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -195,6 +198,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error marking email as read:", error);
       res.status(500).json({ error: "Failed to mark email as read" });
+    }
+  });
+
+  // ========== Knowledge Base (RAG) ==========
+
+  // Get all knowledge base entries
+  app.get("/api/knowledge", async (req, res) => {
+    try {
+      const entries = await storage.getAllKnowledgeEntries();
+      res.json(entries);
+    } catch (error) {
+      console.error("Error fetching knowledge base:", error);
+      res.status(500).json({ error: "Failed to fetch knowledge base" });
+    }
+  });
+
+  // Create knowledge base entry
+  app.post("/api/knowledge", async (req, res) => {
+    try {
+      const validatedData = insertKnowledgeBaseSchema.parse(req.body);
+      
+      const embedding = await generateEmbedding(validatedData.content);
+      const entry = await storage.createKnowledgeEntry(validatedData, embedding);
+
+      res.status(201).json(entry);
+    } catch (error: any) {
+      console.error("Error creating knowledge entry:", error);
+      res.status(400).json({ error: error.message || "Failed to create knowledge entry" });
+    }
+  });
+
+  // Update knowledge base entry
+  app.patch("/api/knowledge/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { content } = req.body;
+
+      if (!content || typeof content !== "string") {
+        return res.status(400).json({ error: "Content is required" });
+      }
+
+      const embedding = await generateEmbedding(content);
+      const entry = await storage.updateKnowledgeEntry(id, content, embedding);
+
+      if (!entry) {
+        return res.status(404).json({ error: "Knowledge entry not found" });
+      }
+
+      res.json(entry);
+    } catch (error: any) {
+      console.error("Error updating knowledge entry:", error);
+      res.status(400).json({ error: error.message || "Failed to update knowledge entry" });
+    }
+  });
+
+  // Delete knowledge base entry
+  app.delete("/api/knowledge/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deleteKnowledgeEntry(id);
+
+      if (!deleted) {
+        return res.status(404).json({ error: "Knowledge entry not found" });
+      }
+
+      res.json({ message: "Knowledge entry deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting knowledge entry:", error);
+      res.status(500).json({ error: "Failed to delete knowledge entry" });
+    }
+  });
+
+  // Suggest reply for an email (RAG)
+  app.post("/api/emails/suggest-reply", async (req, res) => {
+    try {
+      const { emailId } = suggestReplySchema.parse(req.body);
+
+      const email = await storage.getEmail(emailId);
+      if (!email) {
+        return res.status(404).json({ error: "Email not found" });
+      }
+
+      const knowledgeEntries = await storage.getAllKnowledgeEntries();
+      const suggestion = await generateReply(email, knowledgeEntries);
+
+      res.json(suggestion);
+    } catch (error: any) {
+      console.error("Error generating reply suggestion:", error);
+      res.status(400).json({ error: error.message || "Failed to generate reply suggestion" });
     }
   });
 
